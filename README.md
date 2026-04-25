@@ -11,23 +11,23 @@ Le répertoire est organisé pour séparer les infrastructures réseaux (Topolog
 ```text
 .
 ├── Topologies/
-│   ├── Topology1_InternetRequired/    # Topologie L2 (Switching) - Dépendances apt au runtime [cite: 36, 44]
-│   ├── Topology2_InternetRequired/    # Topologie L3 (Routing) - Dépendances apt au runtime [cite: 70, 79]
-│   └── Topology2_preconfigured/       # Topologie L3 préconfigurée pour usage hors-ligne [cite: 54]
+│   ├── Topology1_InternetRequired/    # Topologie L2 (Switching) - Dépendances apt au runtime 
+│   ├── Topology2_InternetRequired/    # Topologie L3 (Routing) - Dépendances apt au runtime 
+│   └── Topology2_preconfigured/       # Topologie L3 préconfigurée pour usage hors-ligne 
 │
 ├── Labs/
-│   ├── ftp_scenario/                  # Test de transfert FTP sécurisé sur topologie L3 [cite: 3, 16]
-│   └── ssh_scenario/                  # Test de connexion SSH/Telnet sur topologie L3 [cite: 22, 34]
+│   ├── ftp_scenario/                  # Test de transfert FTP sécurisé sur topologie L3 
+│   └── ssh_scenario/                  # Test de connexion SSH/Telnet sur topologie L3 
 │
 ├── captures_trafic/                   # Répertoire de stockage des captures .pcap (Topo 1, 2 et 3)
-└── setup_solution.sh                  # Scripts d'orchestration et de câblage OVS/Veth [cite: 3, 22, 45, 80]
+└── setup_solution.sh                  # Scripts d'orchestration et de câblage OVS/Veth 
+```
 
 ## Types de Topologies
 Le projet propose deux approches de déploiement :
 
 1. **Topologies avec accès Internet :** Les dépendances logicielles (`iproute2`, `tcpdump`, etc.) sont téléchargées et installées dynamiquement lors de l'exécution du script via `apt update`.
 2. **Topologies et Labs préconfigurés :** Ces versions utilisent des images Docker construites localement en amont via des `Dockerfile`. Elles sont indispensables pour les environnements isolés (comme les postes en salles de TP sans accès internet externe) car elles embarquent nativement tous les outils réseau nécessaires.
-
 
 ## Utilisation des Environnements Préconfigurés (Hors-Ligne / Salles de TP)
 
@@ -37,7 +37,7 @@ Il existe deux approches pour obtenir les images Docker requises : la constructi
 
 ### Option A : Construction locale des images (Nécessite Internet)
 
-Si vous disposez d'une connexion Internet temporaire, vous pouvez construire les images manuellement. [cite_start]Les noms d'images ci-dessous correspondent à ceux renseignés dans les fichiers `docker-compose.yaml` du projet[cite: 16, 19, 20, 53].
+Si vous disposez d'une connexion Internet temporaire, vous pouvez construire les images manuellement. Les noms d'images ci-dessous correspondent à ceux renseignés dans les fichiers `docker-compose.yaml` du projet.
 
 **1. Pour la Topologie 2 préconfigurée :**
 Depuis `Topologies/Topology2_preconfigured/Dockerfiles_List/` :
@@ -71,15 +71,16 @@ docker save -o images_netlab.tar \
   ftp_scenario-server:latest ftp_scenario-client:latest \
   ssh_scenario-server:latest ssh_scenario-client:latest
 ```
-> IMPORTANT (contexte d'exécution sur les machines de la PPTI):
-> La VM installée sur les machines PPTI possède dèjà les archives `.tar` (qui ne sont pas présents dans ce répo GitHub),
-> il n'est donc pas nécessaire d'exécuter l'étape précédente (sauf à des fins de test additionnel).
+
+> **IMPORTANT** (contexte d'exécution sur les machines de la PPTI) :
+> La VM installée sur les machines PPTI possède déjà les archives `.tar` (qui ne sont pas présentes dans ce répo GitHub), il n'est donc pas nécessaire d'exécuter l'étape précédente (sauf à des fins de test additionnel).
 
 **2. Chargement (Sur la machine cible isolée) :**
 Transférez le fichier `images_netlab.tar` et chargez-le :
 ```bash
 docker load -i images_netlab.tar
 ```
+
 Pour vérifier les images chargées :
 ```bash
 docker images
@@ -89,14 +90,11 @@ docker images
 
 Une fois les images chargées dans le cache local de Docker, vous pouvez lancer les scripts d'orchestration.
 
-1. [cite_start]**Vérification du Compose :** Les fichiers `docker-compose.yaml` préconfigurés sont déjà réglés pour utiliser ces images locales au lieu de tenter un `build`[cite: 16, 19, 53].
-2. [cite_start]**Lancement :** Utilisez les scripts Bash fournis pour automatiser le câblage Open vSwitch et la configuration réseau[cite: 56, 70]:
+1. **Vérification du Compose :** Les fichiers `docker-compose.yaml` préconfigurés sont déjà réglés pour utiliser ces images locales au lieu de tenter un `build`.
+2. **Lancement :** Utilisez les scripts Bash fournis pour automatiser le câblage Open vSwitch et la configuration réseau.
 
 Voici un exemple d'exécution :
 ```bash
 chmod +x setup_solution2Lab.sh
 ./setup_solution2Lab.sh
 ```
-
-
-
