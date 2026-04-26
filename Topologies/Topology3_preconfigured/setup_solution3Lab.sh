@@ -143,6 +143,10 @@ echo " -> Ping du Client vers le Serveur (10 paquets)..."
 docker exec client ping -c 10 10.1.20.2
 sleep 2
 
+echo " -> Traceroute du Client vers le Serveur..."
+docker exec client traceroute -n 10.1.20.2
+sleep 2
+
 # Arrêt de la capture en masquant les erreurs si pkill n'est pas installé
 docker exec sonde sh -c 'pkill tcpdump || kill $(pidof tcpdump)' >/dev/null 2>&1 || true
 
