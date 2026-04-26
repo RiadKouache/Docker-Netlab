@@ -11,17 +11,19 @@ Le répertoire est organisé pour séparer les infrastructures réseaux (Topolog
 ```text
 .
 ├── Topologies/
-│   ├── Topology1_InternetRequired/    # Topologie L2 (Switching) - Dépendances apt au runtime 
-│   ├── Topology2_InternetRequired/    # Topologie L3 (Routing Statique) - Dépendances apt au runtime 
-│   ├── Topology2_preconfigured/       # Topologie L3 préconfigurée pour usage hors-ligne 
+│   ├── Topology1_InternetRequired/    # Topologie L2 (Switching) - Dépendances apt au runtime
+│   ├── Topology2_InternetRequired/    # Topologie L3 (Routing Statique) - Dépendances apt au runtime
+│   ├── Topology2_preconfigured/       # Topologie L3 préconfigurée pour usage hors-ligne
 │   └── Topology3_preconfigured/       # Topologie L3 avancée (Routage Dynamique RIPv2)
 │
 ├── Labs/
-│   ├── ftp_scenario/                  # Test de transfert FTP sécurisé sur topologie L3 
-│   └── ssh_scenario/                  # Test de connexion SSH/Telnet sur topologie L3 
+│   ├── ftp_scenario/                  # Test de transfert FTP sécurisé sur topologie L3
+│   ├── Rlogin_scenario/               # Test de vulnérabilité Rlogin (TCP)
+│   ├── ssh_scenario/                  # Test de connexion SSH/Telnet sur topologie L3
+│   └── TFTP_scenario/                 # Test de transfert UDP et ports éphémères
 │
 ├── captures_trafic/                   # Répertoire de stockage des captures .pcap (Topo 1, 2 et 3)
-└── setup_solution.sh                  # Scripts d'orchestration et de câblage OVS/Veth 
+└── setup_solution.sh                  # Scripts d'orchestration et de câblage OVS/Veth
 ```
 
 ## Types de Topologies
@@ -32,7 +34,7 @@ Le projet propose deux approches de déploiement :
 
 ## Utilisation des Environnements Préconfigurés (Hors-Ligne / Salles de TP)
 
-Cette section détaille la marche à suivre pour déployer les topologies et laboratoires préconfigurés (`Topology2_preconfigured`, `Topology3_preconfigured`, `ftp_scenario`, `ssh_scenario`) dans un environnement sans accès à Internet.
+Cette section détaille la marche à suivre pour déployer les topologies et laboratoires préconfigurés (`Topology2_preconfigured`, `Topology3_preconfigured`, et tous les scénarios dans `Labs/`) dans un environnement sans accès à Internet.
 
 Il existe deux approches pour obtenir les images Docker requises : la construction locale via les `Dockerfile` fournis (nécessite Internet une seule fois), ou le chargement direct depuis une archive `.tar`.
 
@@ -59,37 +61,44 @@ docker build -t frr-rip-img:latest -f Dockerfile.frr .
 ```
 
 **3. Pour les scénarios applicatifs (Labs) :**
-Depuis les répertoires respectifs (`Labs/ftp_scenario/` ou `Labs/ssh_scenario/`) :
+Depuis les répertoires respectifs (ex: `Labs/ftp_scenario/`, `Labs/TFTP_scenario/`, etc.) :
 ```bash
-# Exemple pour le Lab FTP
+# Lab FTP
 docker build -t ftp_scenario-server:latest -f Dockerfile.tme .
 docker build -t ftp_scenario-client:latest -f Dockerfile.tme .
+
+# Lab TFTP
+docker build -t tftp-image:latest -f Dockerfile .
+
+# Lab Rlogin
+docker build -t rlogin-image:latest -f Dockerfile .
 ```
 
 ### Option B : Flux de déploiement Hors-Ligne (Save & Load)
 
-Pour les machines totalement isolées, utilisez la méthode d'archivage.
+Pour les machines totalement isolées, utilisez la méthode d'archivage. Les images doivent être archivées dans un fichier unique qui sera placé à la racine du projet (`PRES/`).
 
 **1. Exportation (Sur une machine connectée) :**
-Après avoir construit les images, regroupez-les dans une archive unique :
+Depuis le dossier racine `PRES/`, après avoir construit toutes les images, regroupez-les dans une archive unique :
 ```bash
 docker save -o images_netlab.tar \
   client-img:latest server-img:latest sonde-img:latest \
   frrouting/frr:latest frr-rip-img:latest \
   ftp_scenario-server:latest ftp_scenario-client:latest \
-  ssh_scenario-server:latest ssh_scenario-client:latest
+  ssh_scenario-server:latest ssh_scenario-client:latest \
+  tftp-image:latest rlogin-image:latest
 ```
 
 > **IMPORTANT** (contexte d'exécution sur les machines de la PPTI) :
 > La VM installée sur les machines PPTI possède déjà les archives `.tar` (qui ne sont pas présentes dans ce répo GitHub), il n'est donc pas nécessaire d'exécuter l'étape précédente (sauf à des fins de test additionnel).
 
 **2. Chargement (Sur la machine cible isolée) :**
-Transférez le fichier `images_netlab.tar` et chargez-le :
+Transférez le fichier `images_netlab.tar` à la racine de votre dossier `PRES/` et chargez-le :
 ```bash
 docker load -i images_netlab.tar
 ```
 
-Pour vérifier les images chargées :
+Pour vérifier que toutes les images sont bien chargées :
 ```bash
 docker images
 ```
