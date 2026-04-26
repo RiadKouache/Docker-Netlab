@@ -64,9 +64,13 @@ sudo wireshark -i veth-r1-30-host -k
 *(Appliquez le filtre `icmp or rip` pour observer à la fois les mises à jour de routage et les pings).*
 
 **Étape 3 : Génération du trafic manuel (Terminal 2)**
-Ouvrez un second terminal, connectez-vous au conteneur client et lancez un ping continu :
+Ouvrez un second terminal, connectez-vous au conteneur client, lancez un ping continu, puis vérifiez le chemin avec traceroute :
 ```bash
 docker exec -it client bash
 ping 10.1.20.2
+traceroute -n 10.1.20.2
 ```
-**Résultat attendu :** Dans le terminal du client, les réponses ICMP s'affichent sans perte. Dans Wireshark, vous verrez les paquets ICMP encapsulés avec un tag VLAN 30 (`802.1Q Virtual LAN, PRI: 0, DEI: 0, ID: 30`) traverser le lien de transit en temps réel, entrecoupés toutes les 5 secondes par les annonces de routage RIPv2.
+**Résultats attendus :**
+* Le ping s'affiche sans perte.
+* Le traceroute confirme le passage par la passerelle R1 (10.1.10.1), puis la passerelle R2 (10.1.30.2), avant d'atteindre le serveur (10.1.20.2).
+* Dans Wireshark, vous verrez les paquets ICMP et UDP encapsulés avec un tag VLAN 30 (`802.1Q Virtual LAN, PRI: 0, DEI: 0, ID: 30`) traverser le lien de transit en temps réel.
