@@ -103,22 +103,23 @@ for r in router1 router2; do
     docker exec $r touch /etc/frr/vtysh.conf
 done
 
-# Configuration RIPv2
+# Configuration RIPv2 (Déclaration explicite des sous-réseaux)
 docker exec router1 vtysh -c "configure terminal" \
     -c "router rip" \
     -c "version 2" \
     -c "timers basic 5 15 10" \
-    -c "network eth1" \
-    -c "network eth2" \
+    -c "network 10.1.10.0/24" \
+    -c "network 10.1.30.0/24" \
     -c "redistribute connected"
 
 docker exec router2 vtysh -c "configure terminal" \
     -c "router rip" \
     -c "version 2" \
     -c "timers basic 5 15 10" \
-    -c "network eth1" \
-    -c "network eth2" \
+    -c "network 10.1.20.0/24" \
+    -c "network 10.1.30.0/24" \
     -c "redistribute connected"
+
 
 echo "=== 6. Port Mirroring sur le réseau de Transit (VLAN 30) ==="
 UUID_R1_TRS=$(sudo ovs-vsctl get port veth-r1-30-host _uuid)
