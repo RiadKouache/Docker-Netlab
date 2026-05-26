@@ -3,7 +3,7 @@
 set -e
 
 echo "=== 0. Nettoyage ==="
-docker rm -f server client sonde router1 router2 2>/dev/null || true
+docker rm -f server client sonde router1 router2 prometheus grafana cadvisor 2>/dev/null || true
 docker network rm net-ares 2>/dev/null || true
 
 sudo ovs-vsctl del-br br-ares 2>/dev/null || true
