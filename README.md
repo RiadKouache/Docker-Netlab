@@ -5,113 +5,68 @@ Ce projet, réalisé dans le cadre du Master 1 (Parcours RES) à Sorbonne Univer
 
 Le projet permet de simuler des topologies allant de la simple commutation de niveau 2 (L2) au routage inter-VLAN de niveau 3 (L3), tout en intégrant des fonctionnalités avancées d'ingénierie de trafic comme le **Port Mirroring (SPAN)**, le **Routage Dynamique (RIPv2)**, et l'émulation de contraintes réseau.
 
-## Structure du dépôt
-Le répertoire est organisé pour séparer les infrastructures réseaux (Topologies) des scénarios applicatifs (Labs) :
+## Nouveauté : Stack d'observabilité
+La Topologie 3 intègre désormais une architecture d'observabilité complète permettant de monitorer les performances système et réseau en temps réel, essentielle pour valider la stabilité du routage dynamique :
+* **cAdvisor :** Collecte les métriques système (CPU, RAM, Réseau) de chaque conteneur.
+* **Prometheus :** Base de données temporelle qui scrape les métriques à intervalle régulier.
+* **Grafana :** Interface de visualisation permettant de corréler les charges système avec le trafic généré par les tests (ping, iPerf).
 
+## Structure du dépôt
 ```text
 .
 ├── Topologies/
-│   ├── Topology1_InternetRequired/    # Topologie L2 (Switching) - Dépendances apt au runtime
-│   ├── Topology2_InternetRequired/    # Topologie L3 (Routing Statique) - Dépendances apt au runtime
-│   ├── Topology2_preconfigured/       # Topologie L3 préconfigurée pour usage hors-ligne
-│   └── Topology3_preconfigured/       # Topologie L3 avancée (Routage Dynamique RIPv2)
-│
-├── Labs/
-│   ├── ftp_scenario/                  # Test de transfert FTP sécurisé sur topologie L3
-│   ├── Rlogin_scenario/               # Test de vulnérabilité Rlogin (TCP)
-│   ├── ssh_scenario/                  # Test de connexion SSH/Telnet sur topologie L3
-│   └── TFTP_scenario/                 # Test de transfert UDP et ports éphémères
-│
-├── captures_trafic/                   # Répertoire de stockage des captures .pcap (Topo 1, 2 et 3)
-└── setup_solution.sh                  # Scripts d'orchestration et de câblage OVS/Veth
+│   ├── Topology1_InternetRequired/    # Topologie L2 (Switching)
+│   ├── Topology2_InternetRequired/    # Topologie L3 (Routing Statique)
+│   ├── Topology2_preconfigured/       # Topologie L3 préconfigurée (hors-ligne)
+│   └── Topology3_preconfigured/       # Topologie L3 avancée + Stack Monitoring
+│       ├── Dockerfiles_List/          # Images locales préconfigurées
+│       └── docker-compose.yaml        # Stack complète incluant Prometheus/Grafana
+├── Labs/                              # Scénarios applicatifs (FTP, SSH, TFTP...)
+├── captures_trafic/                   # Répertoire de stockage des captures .pcap
+└── setup_solution.sh                  # Scripts d'orchestration
 ```
 
-## Types de topologies
-Le projet propose deux approches de déploiement :
+## Utilisation des environnements préconfigurés
+Le projet utilise deux approches pour assurer la portabilité en salle de TP sans accès Internet :
 
-1. **Topologies avec accès Internet :** Les dépendances logicielles (`iproute2`, `tcpdump`, etc.) sont téléchargées et installées dynamiquement lors de l'exécution du script via `apt update`.
-2. **Topologies et labs préconfigurés :** Ces versions utilisent des images Docker construites localement en amont via des `Dockerfile`. Elles sont indispensables pour les environnements isolés (comme les postes en salles de TP sans accès internet externe) car elles embarquent nativement tous les outils réseau nécessaires.
-
-## Utilisation des environnements préconfigurés (hors-ligne / salles de TP)
-
-Cette section détaille la marche à suivre pour déployer les topologies et laboratoires préconfigurés (`Topology2_preconfigured`, `Topology3_preconfigured`, et tous les scénarios dans `Labs/`) dans un environnement sans accès à Internet.
-
-Il existe deux approches pour obtenir les images Docker requises : la construction locale via les `Dockerfile` fournis (nécessite Internet une seule fois), ou le chargement direct depuis une archive `.tar`.
-
-### Option A : construction locale des images (nécessite Internet)
-
-Si vous disposez d'une connexion Internet temporaire, vous pouvez construire les images manuellement. Les noms d'images ci-dessous correspondent à ceux renseignés dans les fichiers `docker-compose.yaml` du projet.
-
-**1. Pour les topologies de base (Client, Serveur, Sonde) :**
-Depuis `Topologies/Topology2_preconfigured/Dockerfiles_List/` (ou Topology3) :
+### 1. Construction locale (nécessite Internet)
+Si vous disposez d'un accès, construisez les images localement :
 ```bash
-# Image Client
-docker build -t client-img:latest -f client/Dockerfile .
-# Image Serveur
-docker build -t server-img:latest -f server/Dockerfile .
-# Image Sonde
-docker build -t sonde-img:latest -f sonde/Dockerfile .
+# Pour la stack monitoring (dans Dockerfiles_List/)
+docker build -t prometheus-img:latest ./prometheus
+docker build -t grafana-img:latest ./grafana
+docker build -t cadvisor-img:latest ./cadvisor
 ```
 
-**2. Pour la topologie 3 (image FRR avec RIPv2) :**
-Depuis `Topologies/Topology3_preconfigured/Dockerfiles_List/router/` :
-```bash
-# Construction de l'image FRRouting personnalisée
-docker build -t frr-rip-img:latest -f Dockerfile.frr .
-```
-
-**3. Pour les scénarios applicatifs (labs) :**
-Depuis les répertoires respectifs (ex: `Labs/ftp_scenario/`, `Labs/TFTP_scenario/`, etc.) :
-```bash
-# Lab FTP
-docker build -t ftp_scenario-server:latest -f Dockerfile.tme .
-docker build -t ftp_scenario-client:latest -f Dockerfile.tme .
-
-# Lab TFTP
-docker build -t tftp-image:latest -f Dockerfile .
-
-# Lab Rlogin
-docker build -t rlogin-image:latest -f Dockerfile .
-```
-
-### Option B : flux de déploiement hors-ligne (save & load)
-
-Pour les machines totalement isolées, utilisez la méthode d'archivage. Les images doivent être archivées dans un fichier unique qui sera placé à la racine du projet (`PRES/`).
-
-**1. Exportation (sur une machine connectée) :**
-Depuis le dossier racine `PRES/`, après avoir construit toutes les images, regroupez-les dans une archive unique :
-```bash
-docker save -o images_netlab.tar \
-  client-img:latest server-img:latest sonde-img:latest \
-  frrouting/frr:latest frr-rip-img:latest \
-  ftp_scenario-server:latest ftp_scenario-client:latest \
-  ssh_scenario-server:latest ssh_scenario-client:latest \
-  tftp-image:latest rlogin-image:latest
-```
-
-> **IMPORTANT** (contexte d'exécution sur les machines de la PPTI) :
-> La VM installée sur les machines PPTI possède déjà les archives `.tar` (qui ne sont pas présentes dans ce répo GitHub), il n'est donc pas nécessaire d'exécuter l'étape précédente (sauf à des fins de test additionnel).
-
-**2. Chargement (sur la machine cible isolée) :**
-Transférez le fichier `images_netlab.tar` à la racine de votre dossier `PRES/` et chargez-le :
+### 2. Flux de déploiement hors-ligne (save & load)
+Pour les machines isolées, utilisez l'archive `images_netlab.tar` à placer à la racine du projet (`PRES/`) :
 ```bash
 docker load -i images_netlab.tar
 ```
 
-Pour vérifier que toutes les images sont bien chargées :
-```bash
-docker images
-```
-
-### Exécution de l'environnement
-
-Une fois les images chargées dans le cache local de Docker, vous pouvez lancer les scripts d'orchestration.
-
-1. **Vérification du compose :** Les fichiers `docker-compose.yaml` préconfigurés sont déjà réglés pour utiliser ces images locales au lieu de tenter un `build`.
-2. **Lancement :** Utilisez les scripts Bash fournis pour automatiser le câblage Open vSwitch et la configuration réseau.
-
-Voici un exemple d'exécution :
+## Exécution de l'environnement
+Une fois les images chargées, lancez le script d'automatisation. Le script gère désormais le cycle de vie complet, y compris le nettoyage des conteneurs de monitoring :
 ```bash
 chmod +x setup_solution3Lab.sh
 ./setup_solution3Lab.sh
 ```
+
+## Visualisation du monitoring
+Une fois l'infrastructure lancée :
+
+1. Accédez à Grafana via `http://localhost:3000` (admin/admin).
+2. Utilisez la source de données `http://prometheus:9090`.
+3. Dans l'onglet **Explore**, utilisez la requête suivante pour visualiser les consommations mémoire de tous les conteneurs :
+
+```promql
+container_memory_usage_bytes{name=~".+"}
+```
+
+## Visualisation du trafic capturé
+Le test génère un fichier `.pcap` dans `/home/debian/PRES/captures_trafic/trafic_topo3/`.
+
+* **Wireshark :** Filtrez par `rip` pour observer les mises à jour de routage, ou `icmp` pour vérifier la connectivité entre le Client et le Serveur.
+* **Vérification routage :** `docker exec router1 ip route` confirme la convergence RIPv2.
+
+## Conclusion
+Ce projet démontre la maîtrise d'une architecture SDN résiliente et instrumentée. L'intégration de la stack d'observabilité "Full-Stack" garantit une visibilité totale sur le comportement dynamique des protocoles de routage dans un environnement conteneurisé, offrant une solution robuste pour l'enseignement et l'expérimentation réseau.
