@@ -45,7 +45,7 @@ services:
     networks:
       - net-ares
 
-prometheus:
+  prometheus:
     image: prometheus-img:latest
     container_name: prometheus
     command:
@@ -69,6 +69,9 @@ prometheus:
     image: cadvisor-img:latest
     container_name: cadvisor
     privileged: true
+    command: 
+      - "--disable_metrics=disk,network,tcp,udp,percpu,sched" # Désactive les métriques lourdes
+      - "--housekeeping_interval=10s" # Augmente l'intervalle pour soulager le CPU
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:rw
