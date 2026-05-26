@@ -46,10 +46,8 @@ services:
       - net-ares
 
 prometheus:
-    image: prom/prometheus:latest
+    image: prometheus-img:latest
     container_name: prometheus
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
     ports:
@@ -58,7 +56,7 @@ prometheus:
       - net-ares
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana-img:latest
     container_name: grafana
     ports:
       - "3000:3000"
@@ -68,7 +66,7 @@ prometheus:
       - net-ares
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:latest
+    image: cadvisor-img:latest
     container_name: cadvisor
     privileged: true
     volumes:
